@@ -18,7 +18,9 @@
         "yiisoft/yii2": ">=2.0.5",
         "yiisoft/yii2-bootstrap": "*",
         "yiisoft/yii2-swiftmailer": "*",
-        "macklus/yii2-geoselect": "*"
+        "symfony/dom-crawler": "^3.0",
+        "guzzlehttp/guzzle": "~6.0",
+        "symfony/css-selector": "^3.0"
     },
     "require-dev": {
         "yiisoft/yii2-codeception": "*",
