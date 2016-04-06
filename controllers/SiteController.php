@@ -49,7 +49,10 @@ class SiteController extends Controller
 
     public function actionIndex()
     {
-        return $this->render('index');
+        $products = \app\models\Product::find()->all();
+        return $this->render('index', [
+            'products'=>$products
+        ]);
     }
 
     public function actionLogin()
