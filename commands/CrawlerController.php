@@ -24,21 +24,65 @@ class CrawlerController extends Controller
             $model->save();
         }
     }
-    
+
     public function actionSamsung()
     {
         $lenovo = new \app\components\SamsungParser();
         foreach ($lenovo->getProducts() as $product) {
+
+            $images = $product['info']['images'];
+            unset($product['info']['images']);
             $model = new \app\models\Product();
             $attributes = [
                 'title' => $product['title'],
                 'brand_id' => $lenovo->brand_id,
-                'product_type_id' => 2, // @todo Заменить
+                'product_type_id' => 1, // @todo Заменить
                 'model' => $product['model'], // @todo Заменить
                 'options' => \yii\helpers\Json::encode($product['info']), // @todo Заменить
             ];
             $model->setAttributes($attributes);
             $model->save();
+            foreach ($images as $key => $image) {
+                $tempnam = tempnam('/tmp/', 'image');
+                try {
+                    $client = new \GuzzleHttp\Client();
+                    $response = $client->request('get', $image);
+                    if ($response->getBody()->isReadable()) {
+                        if ($response->getStatusCode() == 200) {
+                            file_put_contents($tempnam, $response->getBody()->getContents());
+
+                            $file = new \app\models\File();
+                            $file->hash = md5_file($tempnam);
+                            $file->mime = mime_content_type($tempnam);
+                            $file->size = filesize($tempnam);
+                            $file->extension = preg_replace("/\w+\/(\w+)$/", "$1", $file->mime);
+
+                            if ($file->save()) {
+            
+                                $dirname = \yii::$app->basePath . '/web/images/';
+                                $dirname .= mb_substr($file->hash, 0, 2) . '/';
+                                $dirname .= mb_substr($file->hash, 2, 2) . '/';
+                                
+                                if (!file_exists($dirname) || !is_dir($dirname)) {
+                                    mkdir($dirname, 0777, true);
+                                }
+                                
+                                $filename = $dirname . $file->hash . '.' . $file->extension;
+                                rename($tempnam, $filename);
+                                chmod($filename, 0777);
+                                $imageProduct = new \app\models\ImageProduct();
+                                $imageProduct->product_id = $model->id;
+                                $imageProduct->file_id = $file->id;
+                                $imageProduct->save();
+                            }
+                        }
+                    }
+                    @unlink($tempnam);
+                } catch (Exception $ex) {
+                    @unlink($tempnam);
+                    throw $ex;
+                }
+            }
         }
     }
 

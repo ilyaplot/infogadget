@@ -12,11 +12,8 @@ class SamsungParser extends Component
 
     public $brand_id = 2;
     public $base_uri = 'http://www.samsung.com';
-    
     public $map = [
-        
     ];
-    
     protected $models = [
         'brand' => false,
     ];
@@ -28,37 +25,37 @@ class SamsungParser extends Component
                 ->one();
         return parent::init();
     }
-    
-    public function getModel($model) 
+
+    public function getModel($model)
     {
         return $this->models[$model];
     }
-    
+
     public function getProducts()
     {
         $client = new Client([
             'base_uri' => $this->base_uri
         ]);
 
-       // $proxy = \app\models\Proxy::find()->orderBy('rand()')->one();
+        // $proxy = \app\models\Proxy::find()->orderBy('rand()')->one();
 
-        
-        $result = $client->request('GET', '/ru/consumer/mobile-devices/tablets/'/**, [
-            'proxy' => [
-                'http' => $proxy->string,
-            ]
-        ]**/);
-        
-        
+
+        $result = $client->request('GET', '/ru/consumer/mobile-devices/smartphones/'/*                 * , [
+                  'proxy' => [
+                  'http' => $proxy->string,
+                  ]
+                  ]* */);
+
+
         $html = $result->getBody()->getContents();
         //var_dump($html);
-        
+
         $crawler = new Crawler($html);
         $smartphones = $crawler->filter('div.product-card.front')->each(function ($node, $i) {
             $uri = $node->filter('a')->eq(0)->attr('href');
             if (empty($uri))
                 return false;
-  
+
             return [
                 'uri' => $uri,
                 'title' => $this->filterTitle($node->filter('a')->eq(0)->attr('title')),
@@ -68,7 +65,7 @@ class SamsungParser extends Component
         });
         return array_filter($smartphones, 'is_array');
     }
-    
+
     public function getProductInfo($uri)
     {
         $client = new Client([
@@ -77,33 +74,39 @@ class SamsungParser extends Component
 
         //$proxy = \app\models\Proxy::find()->orderBy('rand()')->one();
 
-        
-        $result = $client->request('GET', $uri/**, [
-            'proxy' => [
-                'http' => $proxy->string,
-            ]
-        ]**/);
-        
-        
+
+        $result = $client->request('GET', $uri/*                 * , [
+                  'proxy' => [
+                  'http' => $proxy->string,
+                  ]
+                  ]* */);
+
+
         $html = $result->getBody()->getContents();
 
         $crawler = new Crawler($html);
         $list = $crawler->filter('div.spec-list');
-        
+
         if (!$list->count())
             return [];
 
         $info = $list->each(function ($node, $i) {
-            
+
             return [
                 'title' => $node->filter('h4')->html(),
                 'value' => $node->filter('ul')->html(),
             ];
         });
-        
-        return array_filter($info, 'is_array');
+
+        $images = $crawler->filter('a.thumbnail > img')->each(function($node, $i) {
+            return preg_replace("/\?.*/isu", "?\$TM-Gallery$", $node->attr('src'));
+        });
+
+        $info = array_filter($info, 'is_array');
+        $info['images'] = array_filter($images);
+        return $info;
     }
-    
+
     public function filterTitle($title)
     {
         return preg_replace("/^Samsung\s/isu", "", $title);

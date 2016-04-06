@@ -19,8 +19,16 @@ class ProductController extends Controller
 
     public function actionIndex()
     {
-        $products = \app\models\Product::find()->all();
-        return $this->render('index', [
+        $types = \app\models\ProductType::find()->all();
+        return $this->render('types', [
+            'types'=>$types
+        ]);
+    }
+    
+    public function actionType($id)
+    {
+        $products = \app\models\Product::find()->andWhere('product_type_id = :id', ['id'=>$id])->all();
+        return $this->render('list', [
             'products'=>$products
         ]);
     }

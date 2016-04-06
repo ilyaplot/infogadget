@@ -1,0 +1,3 @@
+<?=
+tempnam('/tmp/', 'image');
+?>

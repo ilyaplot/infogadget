@@ -31,4 +31,9 @@ class Product extends ActiveRecord
     {
         return \yii\helpers\Json::decode($this->options);
     }
+    
+    public function getImages()
+    {
+        return $this->hasMany(ImageProduct::className(), ['product_id' => 'id']);
+    }
 }
